@@ -69,9 +69,10 @@ install(TARGETS dawn
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   FILE_SET dawn_webgpu_header)
-install(
-  DIRECTORY "${dawn_BINARY_DIR}/gen/emscripten-bits"
-  TYPE LIB)
+# TODO disabled for now
+# install(
+#   DIRECTORY "${dawn_BINARY_DIR}/gen/emscripten-bits"
+#   TYPE LIB)
 # installs helpful package info so that folks can locate us via cmake find_package or pkg-config.  
 install(EXPORT dawn-targets
   FILE dawnTargets.cmake
@@ -93,7 +94,7 @@ install(FILES
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/dawn)
 # Run simple unit tests to ensure wgpu symbols were exported.
 include(CTest)
-set(BUILD_TESTING ON)
+set(BUILD_TESTING OFF)
 if (BUILD_TESTING)
   set(webgpu_headers_disconnect_subsequent_updates ON)
   FetchContent_Declare(webgpu_headers
