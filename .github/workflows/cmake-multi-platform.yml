@@ -23,43 +23,87 @@ jobs:
       # 2. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
       # 3. <MacOS, Release, latest Clang compiler toolchain on the default runner image, default generator>
       matrix:
-        os: [macos-14, ubuntu-22.04, windows-2022]
+        os: [windows, linux, macos]
+        platform: [x86_64, aarch64]
         build_type: [Release]
-        toolchain: [gcc, clang, msvc]
         include:
-          - os: macos-14
-            toolchain: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            env:
-              MACOSX_DEPLOYMENT_TARGET: "11.0"
-            container: null
-          - os: windows-2022
+          - os: windows
+            runs-on: windows-2022
             toolchain: msvc
             c_compiler: cl
             cpp_compiler: cl
             container: null
-          - os: ubuntu-22.04
+          - os: linux
+            runs-on: ubuntu-22.04
             toolchain: gcc
             c_compiler: gcc
             cpp_compiler: g++
+            container: null
+          - os: linux
+            platform: x86_64
             container: dockcross/manylinux_2_28-x64:latest
-        exclude:
-            - os: macos-14
-              toolchain: msvc
-            - os: macos-14
-              toolchain: gcc
-            - os: ubuntu-22.04
-              toolchain: msvc
-            - os: ubuntu-22.04
-              toolchain: clang
-            - os: windows-2022
-              toolchain: clang
-            - os: windows-2022
-              toolchain: gcc
-    name: build-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.toolchain }}
-    runs-on: ${{ matrix.os }}
+          - os: linux
+            platform: aarch64
+            container: dockcross/manylinux_2_28-aarch64:latest
+          - os: macos
+            runs-on: macos-14
+            toolchain: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            container: null
+            env:
+              MACOSX_DEPLOYMENT_TARGET: "11.0"
+          - os: macos
+            platform: x86_64
+            env:
+              CMAKE_APPLE_SILICON_PROCESSOR: "x86_64"
+          - os: macos
+            platform: aarch64
+            env:
+              CMAKE_APPLE_SILICON_PROCESSOR: "arm64"
+
+    name: build-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.toolchain }}-${{ matrix.build_type }}
+    runs-on: ${{ matrix.runs-on }}
     container: ${{ matrix.container }}
+
+    #   matrix:
+    #     os: [macos-14, ubuntu-22.04, windows-2022]
+    #     build_type: [Release]
+    #     toolchain: [gcc, clang, msvc]
+    #     include:
+    #       - os: macos-14
+    #         toolchain: clang
+    #         c_compiler: clang
+    #         cpp_compiler: clang++
+    #         env:
+    #           MACOSX_DEPLOYMENT_TARGET: "11.0"
+    #         container: null
+    #       - os: windows-2022
+    #         toolchain: msvc
+    #         c_compiler: cl
+    #         cpp_compiler: cl
+    #         container: null
+    #       - os: ubuntu-22.04
+    #         toolchain: gcc
+    #         c_compiler: gcc
+    #         cpp_compiler: g++
+    #         container: dockcross/manylinux_2_28-x64:latest
+    #     exclude:
+    #         - os: macos-14
+    #           toolchain: msvc
+    #         - os: macos-14
+    #           toolchain: gcc
+    #         - os: ubuntu-22.04
+    #           toolchain: msvc
+    #         - os: ubuntu-22.04
+    #           toolchain: clang
+    #         - os: windows-2022
+    #           toolchain: clang
+    #         - os: windows-2022
+    #           toolchain: gcc
+    # name: build-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.toolchain }}
+    # runs-on: ${{ matrix.os }}
+    # container: ${{ matrix.container }}
     env:
       SCCACHE_GHA_ENABLED: "true"
 
@@ -70,7 +114,8 @@ jobs:
       uses: mozilla-actions/sccache-action@v0.0.3
   
     - name: Set up dependencies on linux
-      if: matrix.container == 'dockcross/manylinux_2_28-x64:latest'
+      if: matrix.os == 'linux'
+      # if: matrix.container == 'dockcross/manylinux_2_28-x64:latest'
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
