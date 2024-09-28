@@ -112,16 +112,16 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Use sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
-
     - name: Set up QEMU
       if: matrix.os == 'linux' && matrix.platform == 'aarch64'
       uses: docker/setup-qemu-action@v3
       with:
         platforms: arm64
+
+    - uses: actions/checkout@v4
+
+    - name: Use sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
 
     - name: Set up dependencies on linux
       if: matrix.os == 'linux'
