@@ -61,10 +61,6 @@ jobs:
           - os: macos
             platform: aarch64
             cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=arm64
-        exclude:
-          # Exclude aarch64 on linux for now (cross compilation woes)
-          - os: linux
-            platform: aarch64
 
     name: build-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.toolchain }}-${{ matrix.build_type }}
     runs-on: ${{ matrix.runs-on }}
