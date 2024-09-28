@@ -61,8 +61,8 @@ jobs:
           - os: macos
             platform: aarch64
             cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=arm64
-        # Exclude aarch64 on linux for now (cross compilation woes)
         exclude:
+          # Exclude aarch64 on linux for now (cross compilation woes)
           - os: linux
             platform: aarch64
 
