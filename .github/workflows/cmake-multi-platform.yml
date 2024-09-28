@@ -86,10 +86,16 @@ jobs:
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
-    - name: Get chromium version
-      run: >
-        CHROMIUM_VERSION=`cat chromium_version.txt`  
-        echo "CHROMIUM_VERSION=${CHROMIUM_VERSION}" >> $GITHUB_ENV
+    - name: Read README.md
+      uses: jaywcjlove/github-action-read-file@main
+      with:
+        path: package.json        
+
+    - name: Read chromium version
+      id: chromium-version
+      uses: jaywcjlove/github-action-read-file@main
+      with:
+        path: chromium_version.txt
 
     - name: Configure CMake
       run: >
@@ -100,7 +106,7 @@ jobs:
         -DCMAKE_C_COMPILER_LAUNCHER=sccache
         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ env.CHROMIUM_VERSION }}-${{ matrix.os }}-${{ matrix.platform }}
+        -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}
         -S .
 
     - name: Build
