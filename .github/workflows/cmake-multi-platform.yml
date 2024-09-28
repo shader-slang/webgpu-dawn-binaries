@@ -85,7 +85,7 @@ jobs:
     - name: Set up dependencies on linux (aarch64)
       if: matrix.os == 'linux' && matrix.platform == 'aarch64'
       run: >
-        sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config crossbuild-essential-arm64
+        sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config crossbuild-essential-arm64
 
     - name: Read chromium version
       id: chromium-version
