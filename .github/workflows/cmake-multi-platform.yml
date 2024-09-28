@@ -47,10 +47,10 @@ jobs:
             container: null
           - os: linux
             platform: x86_64
-            container: dockcross/manylinux_2_28-x64:latest
+            container: quay.io/pypa/manylinux_2_28_x86_64:latest
           - os: linux
             platform: aarch64
-            container: dockcross/manylinux2014-aarch64:latest
+            container: quay.io/pypa/manylinux_2_28_aarch64:latest
           - os: macos
             runs-on: macos-14
             toolchain: clang
@@ -149,7 +149,7 @@ jobs:
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: dist-${{ matrix.os }}-${{ matrix.build_type }}
+        name: dist-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build_type }}
         path: dist
 
     - name: Aniticipate crash dumps on windows
