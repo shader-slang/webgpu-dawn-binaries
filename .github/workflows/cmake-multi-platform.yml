@@ -86,16 +86,11 @@ jobs:
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
-    - name: Read README.md
-      uses: jaywcjlove/github-action-read-file@main
-      with:
-        path: package.json        
-
     - name: Read chromium version
       id: chromium-version
       uses: jaywcjlove/github-action-read-file@main
       with:
-        path: chromium_version.txt
+        localfile: chromium_version.txt
 
     - name: Configure CMake
       run: >
