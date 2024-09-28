@@ -61,12 +61,10 @@ jobs:
               MACOSX_DEPLOYMENT_TARGET: "11.0"
           - os: macos
             platform: x86_64
-            env:
-              CMAKE_APPLE_SILICON_PROCESSOR: "x86_64"
+            cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64
           - os: macos
             platform: aarch64
-            env:
-              CMAKE_APPLE_SILICON_PROCESSOR: "arm64"
+            cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=arm64
 
     name: build-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.toolchain }}-${{ matrix.build_type }}
     runs-on: ${{ matrix.runs-on }}
@@ -118,7 +116,13 @@ jobs:
 
     - name: Use sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-  
+
+    - name: Set up QEMU
+      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
+      uses: docker/setup-qemu-action@v3
+      with:
+        - platforms: arm64
+
     - name: Set up dependencies on linux
       if: matrix.os == 'linux'
       # if: matrix.container == 'dockcross/manylinux_2_28-x64:latest'
@@ -145,6 +149,7 @@ jobs:
         -G ZIP
         -C ${{ matrix.build_type }}
         -B dist
+        -P webgpu-dawn-${{ matrix.os }}-${{ matrix.platform }}
 
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
