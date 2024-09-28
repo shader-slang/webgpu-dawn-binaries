@@ -121,7 +121,7 @@ jobs:
       if: matrix.os == 'linux' && matrix.platform == 'aarch64'
       uses: docker/setup-qemu-action@v3
       with:
-        - platforms: arm64
+        platforms: arm64
 
     - name: Set up dependencies on linux
       if: matrix.os == 'linux'
