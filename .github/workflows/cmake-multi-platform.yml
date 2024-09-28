@@ -70,44 +70,6 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container: ${{ matrix.container }}
 
-    #   matrix:
-    #     os: [macos-14, ubuntu-22.04, windows-2022]
-    #     build_type: [Release]
-    #     toolchain: [gcc, clang, msvc]
-    #     include:
-    #       - os: macos-14
-    #         toolchain: clang
-    #         c_compiler: clang
-    #         cpp_compiler: clang++
-    #         env:
-    #           MACOSX_DEPLOYMENT_TARGET: "11.0"
-    #         container: null
-    #       - os: windows-2022
-    #         toolchain: msvc
-    #         c_compiler: cl
-    #         cpp_compiler: cl
-    #         container: null
-    #       - os: ubuntu-22.04
-    #         toolchain: gcc
-    #         c_compiler: gcc
-    #         cpp_compiler: g++
-    #         container: dockcross/manylinux_2_28-x64:latest
-    #     exclude:
-    #         - os: macos-14
-    #           toolchain: msvc
-    #         - os: macos-14
-    #           toolchain: gcc
-    #         - os: ubuntu-22.04
-    #           toolchain: msvc
-    #         - os: ubuntu-22.04
-    #           toolchain: clang
-    #         - os: windows-2022
-    #           toolchain: clang
-    #         - os: windows-2022
-    #           toolchain: gcc
-    # name: build-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.toolchain }}
-    # runs-on: ${{ matrix.os }}
-    # container: ${{ matrix.container }}
     env:
       SCCACHE_GHA_ENABLED: "true"
 
@@ -120,12 +82,15 @@ jobs:
 
     - uses: actions/checkout@v4
 
+    - name: set version (which gets used as release name)
+      run: |
+        echo "WEBGPU_DAWN_VERSION=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+
     - name: Use sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
 
     - name: Set up dependencies on linux
       if: matrix.os == 'linux'
-      # if: matrix.container == 'dockcross/manylinux_2_28-x64:latest'
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
@@ -149,7 +114,7 @@ jobs:
         -G ZIP
         -C ${{ matrix.build_type }}
         -B dist
-        -P webgpu-dawn-${{ matrix.os }}-${{ matrix.platform }}
+        -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ env.WEBGPU_DAWN_VERSION }}-${{ matrix.os }}-${{ matrix.platform }}
 
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
