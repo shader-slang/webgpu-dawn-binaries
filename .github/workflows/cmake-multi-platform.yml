@@ -46,8 +46,9 @@ jobs:
             container: quay.io/pypa/manylinux_2_28_x86_64:latest
           - os: linux
             platform: aarch64
-            c_compiler: aarch64-linux-gnu-gcc
-            cpp_compiler: aarch64-linux-gnu-g++
+            c_compiler: aarch64-unknown-linux-gnu-gcc
+            cpp_compiler: aarch64-unknown-linux-gnu-g++
+            container: messense/manylinux_2_28-cross:aarch64-arm64
             # container: quay.io/pypa/manylinux_2_28_aarch64:latest
           - os: macos
             runs-on: macos-14
@@ -77,15 +78,10 @@ jobs:
     - name: Use sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
 
-    - name: Set up dependencies on linux (x86_64)
-      if: matrix.os == 'linux' && matrix.platform == 'x86_64'
+    - name: Set up dependencies on linux
+      if: matrix.os == 'linux'
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
-
-    - name: Set up dependencies on linux (aarch64)
-      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
-      run: >
-        sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev mesa-common-dev libx11-xcb-dev pkg-config crossbuild-essential-arm64
 
     - name: Read chromium version
       id: chromium-version
