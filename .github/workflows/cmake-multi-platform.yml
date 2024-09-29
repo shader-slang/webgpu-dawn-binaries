@@ -102,8 +102,6 @@ jobs:
           ${{ matrix.cmake_args }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-          -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
           -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }} \
           -S .
@@ -119,7 +117,7 @@ jobs:
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
     - name: Configure CMake
-      if: matrix.os != 'linux' && matrix.platform != 'aarch64'
+      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
       run: >
         cmake -B build
         ${{ matrix.cmake_args }}
@@ -132,17 +130,17 @@ jobs:
         -S .
 
     - name: Build
-      if: matrix.os != 'linux' && matrix.platform != 'aarch64'
+      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
       run: cmake --build build --config ${{ matrix.build_type }}
 
     - name: Test
-      if: matrix.os != 'linux' && matrix.platform != 'aarch64'
+      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
       working-directory: build
       run: |
         ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Package
-      if: matrix.os != 'linux' && matrix.platform != 'aarch64'
+      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
       run: >
         cpack --config build/CPackConfig.cmake
         -G ZIP
