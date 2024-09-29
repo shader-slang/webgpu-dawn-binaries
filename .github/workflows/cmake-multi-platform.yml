@@ -46,6 +46,7 @@ jobs:
             container: quay.io/pypa/manylinux_2_28_x86_64:latest
           - os: linux
             platform: aarch64
+            skip: true
             # container: quay.io/pypa/manylinux_2_28_aarch64:latest
           - os: macos
             runs-on: macos-14
@@ -117,7 +118,7 @@ jobs:
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
     - name: Configure CMake
-      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
+      if: ${{ !matrix.skip }}
       run: >
         cmake -B build
         ${{ matrix.cmake_args }}
@@ -130,17 +131,17 @@ jobs:
         -S .
 
     - name: Build
-      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
+      if: ${{ !matrix.skip }}
       run: cmake --build build --config ${{ matrix.build_type }}
 
     - name: Test
-      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
+      if: ${{ !matrix.skip }}
       working-directory: build
       run: |
         ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Package
-      if: ! (matrix.os = 'linux' && matrix.platform == 'aarch64')
+      if: ${{ !matrix.skip }}
       run: >
         cpack --config build/CPackConfig.cmake
         -G ZIP
