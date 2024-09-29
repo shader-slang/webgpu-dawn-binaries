@@ -88,7 +88,7 @@ jobs:
       with:
         platforms: arm64      
 
-    - name: Cross compile linux/aarch64
+    - name: Build for linux/aarch64 in QEMU
       if: matrix.os == 'linux' && matrix.platform == 'aarch64'
       uses: addnab/docker-run-action@v3
       with:
@@ -107,9 +107,9 @@ jobs:
           -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }} \
           -S .
           cmake --build build --config ${{ matrix.build_type }}
-          cpack --config build/CPackConfig.cmake
-          -G ZIP
-          -C ${{ matrix.build_type }}
+          cpack --config build/CPackConfig.cmake \
+          -G ZIP \
+          -C ${{ matrix.build_type }} \
           -B dist
 
     - name: Set up dependencies on linux
@@ -117,7 +117,7 @@ jobs:
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
-    - name: Configure CMake
+    - name: Configure
       if: ${{ !matrix.skip }}
       run: >
         cmake -B build
