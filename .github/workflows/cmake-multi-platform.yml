@@ -94,7 +94,7 @@ jobs:
         image: quay.io/pypa/manylinux_2_28_aarch64:latest
         options: |
           --platform linux/arm64
-          --volume ${{ github.workspace }}/../:/workspace
+          --volume ${{ github.workspace }}:/workspace
         run: |
           dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
           cd /workspace
