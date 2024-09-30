@@ -18,76 +18,130 @@ jobs:
     strategy:
       fail-fast: false
   
-      # Set up a matrix to run the following 3 configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
-      # 2. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
-      # 3. <MacOS, Release, latest Clang compiler toolchain on the default runner image, default generator>
       matrix:
-        os: [macos-14, ubuntu-22.04, windows-2022]
+        os: [windows, linux, macos]
+        platform: [x86_64, aarch64]
         build_type: [Release]
-        toolchain: [gcc, clang, msvc]
         include:
-          - os: macos-14
-            toolchain: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            env:
-              MACOSX_DEPLOYMENT_TARGET: "11.0"
-            container: null
-          - os: windows-2022
+          - os: windows
+            runs-on: windows-2022
             toolchain: msvc
             c_compiler: cl
             cpp_compiler: cl
             container: null
-          - os: ubuntu-22.04
+          - os: windows
+            platform: x86_64
+            cmake_args: -A x64
+          - os: windows
+            platform: aarch64
+            cmake_args: -A ARM64
+          - os: linux
+            runs-on: ubuntu-22.04
             toolchain: gcc
             c_compiler: gcc
             cpp_compiler: g++
-            container: dockcross/manylinux_2_28-x64:latest
-        exclude:
-            - os: macos-14
-              toolchain: msvc
-            - os: macos-14
-              toolchain: gcc
-            - os: ubuntu-22.04
-              toolchain: msvc
-            - os: ubuntu-22.04
-              toolchain: clang
-            - os: windows-2022
-              toolchain: clang
-            - os: windows-2022
-              toolchain: gcc
-    name: build-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.toolchain }}
-    runs-on: ${{ matrix.os }}
+            container: null
+          - os: linux
+            platform: x86_64
+            container: quay.io/pypa/manylinux_2_28_x86_64:latest
+          - os: linux
+            platform: aarch64
+            skip: true
+            # container: quay.io/pypa/manylinux_2_28_aarch64:latest
+          - os: macos
+            runs-on: macos-14
+            toolchain: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            container: null
+            env:
+              MACOSX_DEPLOYMENT_TARGET: "11.0"
+          - os: macos
+            platform: x86_64
+            cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64
+          - os: macos
+            platform: aarch64
+            cmake_args: -DCMAKE_APPLE_SILICON_PROCESSOR=arm64
+
+    name: build-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.toolchain }}-${{ matrix.build_type }}
+    runs-on: ${{ matrix.runs-on }}
     container: ${{ matrix.container }}
+
     env:
       SCCACHE_GHA_ENABLED: "true"
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Read chromium version
+      id: chromium-version
+      uses: jaywcjlove/github-action-read-file@main
+      with:
+        localfile: chromium_version.txt
+
     - name: Use sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-  
+
+    - name: Set up QEMU
+      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: arm64      
+
+    - name: Build for linux/aarch64 in QEMU
+      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
+      uses: addnab/docker-run-action@v3
+      with:
+        image: quay.io/pypa/manylinux_2_28_aarch64:latest
+        options: |
+          --platform linux/arm64
+          --volume ${{ github.workspace }}:/workspace
+        run: |
+          dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
+          cd /workspace
+          cmake -B build \
+          ${{ matrix.cmake_args }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }} \
+          -S .
+          cmake --build build --config ${{ matrix.build_type }}
+          cpack --config build/CPackConfig.cmake \
+          -G ZIP \
+          -C ${{ matrix.build_type }} \
+          -B dist
+
     - name: Set up dependencies on linux
-      if: matrix.container == 'dockcross/manylinux_2_28-x64:latest'
+      if: matrix.os == 'linux' && matrix.platform == 'x86_64'
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
-    - name: Configure CMake
+    - name: Configure
+      if: ${{ !matrix.skip }}
       run: >
         cmake -B build
+        ${{ matrix.cmake_args }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_C_COMPILER_LAUNCHER=sccache
         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}
         -S .
 
     - name: Build
+      if: ${{ !matrix.skip }}
       run: cmake --build build --config ${{ matrix.build_type }}
 
+    - name: Test
+      if: ${{ !matrix.skip }}
+      working-directory: build
+      run: |
+        ctest --output-on-failure -C ${{ matrix.build_type }}
+
     - name: Package
+      if: ${{ !matrix.skip }}
       run: >
         cpack --config build/CPackConfig.cmake
         -G ZIP
@@ -97,7 +151,7 @@ jobs:
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: dist-${{ matrix.os }}-${{ matrix.build_type }}
+        name: dist-${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build_type }}
         path: dist
 
     - name: Aniticipate crash dumps on windows
@@ -106,11 +160,6 @@ jobs:
       run: |
         mkdir CrashDumps
         reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /d ${{ github.workspace }}\build\CrashDumps /t REG_EXPAND_SZ /f
-
-    - name: Test
-      working-directory: build
-      run: |
-        ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Upload crash dump
       if: failure() && contains(matrix.os, 'windows')
