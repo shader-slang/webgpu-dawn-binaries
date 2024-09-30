@@ -127,7 +127,7 @@ jobs:
         -DCMAKE_C_COMPILER_LAUNCHER=sccache
         -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}
+        -DCPACK_PACKAGE_FILE_NAME="webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}"
         -S .
 
     - name: Build
