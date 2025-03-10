@@ -24,7 +24,7 @@ jobs:
         build_type: [Release]
         include:
           - os: windows
-            runs-on: windows-2022
+            runs-on: windows-2025
             toolchain: msvc
             c_compiler: cl
             cpp_compiler: cl
