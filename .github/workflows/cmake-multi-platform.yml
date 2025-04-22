@@ -36,18 +36,18 @@ jobs:
             platform: aarch64
             cmake_args: -A ARM64
           - os: linux
-            runs-on: ubuntu-22.04
             toolchain: gcc
             c_compiler: gcc
             cpp_compiler: g++
             container: null
           - os: linux
+            runs-on: ubuntu-24.04
             platform: x86_64
             container: quay.io/pypa/manylinux_2_28_x86_64:latest
           - os: linux
+            runs-on: ubuntu-24.04-arm
             platform: aarch64
-            skip: true
-            # container: quay.io/pypa/manylinux_2_28_aarch64:latest
+            container: quay.io/pypa/manylinux_2_28_aarch64:latest
           - os: macos
             runs-on: macos-14
             toolchain: clang
@@ -67,9 +67,6 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container: ${{ matrix.container }}
 
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-
     steps:
     - uses: actions/checkout@v4
 
@@ -79,69 +76,30 @@ jobs:
       with:
         localfile: chromium_version.txt
 
-    - name: Use sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
-
-    - name: Set up QEMU
-      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
-      uses: docker/setup-qemu-action@v2
-      with:
-        platforms: arm64      
-
-    - name: Build for linux/aarch64 in QEMU
-      if: matrix.os == 'linux' && matrix.platform == 'aarch64'
-      uses: addnab/docker-run-action@v3
-      with:
-        image: quay.io/pypa/manylinux_2_28_aarch64:latest
-        options: |
-          --platform linux/arm64
-          --volume ${{ github.workspace }}:/workspace
-        run: |
-          dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
-          cd /workspace
-          cmake -B build \
-          ${{ matrix.cmake_args }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCPACK_PACKAGE_FILE_NAME=webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }} \
-          -S .
-          cmake --build build --config ${{ matrix.build_type }}
-          cpack --config build/CPackConfig.cmake \
-          -G ZIP \
-          -C ${{ matrix.build_type }} \
-          -B dist
-
     - name: Set up dependencies on linux
-      if: matrix.os == 'linux' && matrix.platform == 'x86_64'
+      if: matrix.os == 'linux'
       run: >
         dnf install -y libxcb libxcb-devel libX11-xcb libxkbcommon libxkbcommon-devel libxkbcommon-x11-devel mesa-vulkan-drivers
 
     - name: Configure
-      if: ${{ !matrix.skip }}
       run: >
         cmake -B build
         ${{ matrix.cmake_args }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_C_COMPILER_LAUNCHER=sccache
-        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCPACK_PACKAGE_FILE_NAME="webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}"
         -S .
 
     - name: Build
-      if: ${{ !matrix.skip }}
       run: cmake --build build --config ${{ matrix.build_type }}
 
     - name: Test
-      if: ${{ !matrix.skip }}
       working-directory: build
       run: |
         ctest --output-on-failure -C ${{ matrix.build_type }}
 
     - name: Package
-      if: ${{ !matrix.skip }}
       run: >
         cpack --config build/CPackConfig.cmake
         -G ZIP
