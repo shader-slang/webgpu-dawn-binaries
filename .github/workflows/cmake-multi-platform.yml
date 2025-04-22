@@ -67,9 +67,6 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     container: ${{ matrix.container }}
 
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-
     steps:
     - uses: actions/checkout@v4
 
@@ -78,9 +75,6 @@ jobs:
       uses: jaywcjlove/github-action-read-file@main
       with:
         localfile: chromium_version.txt
-
-    - name: Use sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
 
     - name: Set up QEMU
       if: matrix.os == 'linux' && matrix.platform == 'aarch64'
@@ -124,8 +118,6 @@ jobs:
         ${{ matrix.cmake_args }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_C_COMPILER_LAUNCHER=sccache
-        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DCPACK_PACKAGE_FILE_NAME="webgpu-dawn-${{ steps.chromium-version.outputs.content }}-${{ matrix.os }}-${{ matrix.platform }}"
         -S .
